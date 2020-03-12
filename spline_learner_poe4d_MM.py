@@ -7,12 +7,13 @@ from datetime import datetime
 import pickle
 
 class SplineLearnerPOE_4D():
-    def __init__(self, use_mm=1, bypass_f1 = False, a='cooperation3', b=0.1, num_bact=3, MEAS_VAR=.1, PROC_VAR=.1, THETA_VAR=1, AVAR=1, BVAR=1, POE_VAR=1, NSAMPS=2, TIME=4, DT=.1, gr = 5, outdir='outdir'):
+    def __init__(self, use_mm=1, bypass_f1 = False, bypass_f2 = False, a='cooperation3', b=0.1, num_bact=3, MEAS_VAR=.1, PROC_VAR=.1, THETA_VAR=100, AVAR=1, BVAR=1, POE_VAR=1, NSAMPS=2, TIME=4, DT=.1, gr = 5, outdir='outdir'):
         NPTSPERSAMP = int(TIME/DT)
         self.time = TIME
         self.num_bugs = num_bact
         self.bypass_f1 = bypass_f1
         self.use_mm = use_mm
+        self.bypass_f2 = bypass_f2
         if isinstance(a,str):
             if a == 'cooperation3':
                 amat = np.array([[-1, 0, 1], [1, -1, 1], [0, 1, -1]])
@@ -173,6 +174,13 @@ class SplineLearnerPOE_4D():
 
         mu_post =  ((bmat.T@np.linalg.inv(self.pvar*self.dt))@(
             Y_est*self.dt) + (bmat.T@np.linalg.inv(self.poe_var))@(f2_flat))@sig_post
+
+        if self.bypass_f2:
+            sig_post = np.linalg.inv((1/self.theta_var)*np.eye(bmat.shape[1]) + self.dt*bmat.T@np.linalg.inv(
+                self.pvar*self.dt)@bmat*self.dt)
+
+            mu_post = ((bmat.T@np.linalg.inv(self.pvar*self.dt))@(
+                Y_est*self.dt))@sig_post
         return mu_post, sig_post
 
     def px(self, x, y, x0, betas, theta_2, ob, prior_var=.5, k=3):
@@ -201,56 +209,10 @@ class SplineLearnerPOE_4D():
             part2 = np.array([(-.5)*(x[1:,i]-f2[:,i]).T@(np.linalg.inv(self.dt * pvar[i]))@(x[1:,i]-f2[:,i]) for i in range(self.num_bugs)])
             part4 = np.zeros(part2.shape)
 
-        # fig, axes = plt.subplots(
-        #     1, self.num_bugs, sharex=True, figsize=(15, 5))
-        # for bb in range(self.num_bugs):
-        #     axes[bb].plot(f1[:, bb], label='f1')
-        #     axes[bb].plot(f2[:, bb],label = 'f2')
-        #     f2_true = x[:-1, :] + x[:-1, :]*self.dt*self.gr[ob] + self.dt * michaelis_menten(x[:-1,:], self.true_a,self.true_b, self.use_mm)
-        #     axes[bb].plot(x[1:, bb], label='xguess')
-        #     axes[bb].plot(self.states[1:,bb,0],label = 'xtrue')
-        #     axes[bb].plot(f2_true[:, bb], label='f2_true')
-        #     axes[bb].legend()
-        # plt.show()
+        if self.bypass_f2:
+            part4 = np.zeros(part2.shape)
 
         try1 = np.array([part1, part2, part3, part4])
-##################################################################################
-
-        # f1 = (x[:-1,:] + x[:-1,:]*self.dt*self.gr[ob]).flatten(order = 'F') + self.dt*(betas@bmat.T)
-        # f2 = x[:-1, :] + x[:-1, :]*self.dt*self.gr[ob] + self.dt * \
-        #     michaelis_menten(x[:-1,:], theta_2[0],theta_2[1], self.use_mm)
-
-        # f2true = self.states[:-1, :, 0] + self.states[:-1, :, 0]*self.dt*self.gr[ob] + self.dt * \
-        #     michaelis_menten(self.states[:-1, :, 0],
-        #                      self.true_a, self.true_b, self.use_mm)
-        # f2 = f2.flatten(order = 'F')
-        # xy = ((x[1:, :] - x[:-1, :] - x[:-1, :]*self.gr[ob]
-        #        * self.dt)/self.dt).flatten(order='F')
-        # # import pdb
-        # # pdb.set_trace()
-        # part1 = -.5*((x[0,:]-x0)@(x[0,:]-x0))*(1/prior_var)
-        # # import pdb; pdb.set_trace()
-        # part2 = (-.5)*(xy-betas@bmat.T)@(np.linalg.inv(self.dt*self.pvar))@(xy-betas@bmat.T)
-        # y = y.flatten(order = 'F')
-        # xfull = x
-        # xx = x[1:, :].flatten(order='F')
-        # x = x.flatten(order = 'F')
-        # part3 = -0.5*((y-x).T@(np.linalg.inv(self.mvar))@(y-x))
-        # part4 = -.5*((f1-f2).T@np.linalg.inv(self.poe_var)@(f1-f2))
-        # if self.bypass_f1:
-        #     # import pdb; pdb.set_trace()
-        #     part2 = (-.5)*(xx-f2).T@(np.linalg.inv(self.dt * self.pvar))@(xx-f2)
-        #     part4 = np.zeros(part2.shape)
-            
-        #     plt.plot(f2true[:, 0],label = 'ftrue')
-        #     plt.plot(xfull[1:, 0],label = 'xguess')
-        #     plt.plot(self.states[1:,0,0],label = 'xtrue')
-        #     plt.legend()
-        #     plt.show()
-
-        #     # plt.plot(np.reshape(f2,(20,3),order='F')[:,0]);plt.plot(xfull[1:,0]); plt.show()
-
-        # try2 = np.array([part1, part2, part3, part4])
 
         return try1
 
@@ -482,6 +444,10 @@ class SplineLearnerPOE_4D():
                             plot_states(self.outdir, xnew, self.states[:, :, i], self.observations[:, :, i],
                                         xold, ob=i, f2=np.reshape(
                                             f2, (self.states.shape[0]-1, self.num_bugs), order='F'))
+                        elif self.bypass_f2:
+                            plot_states(self.outdir, xnew, self.states[:, :, i], self.observations[:, :, i],
+                                        xold, ob=i, 
+                                        f1=np.reshape(f1, (self.states.shape[0]-1, self.num_bugs), order='F'))
                         else:
                             plot_states(self.outdir, xnew, self.states[:, :, i], self.observations[:, :, i],
                                         xold, ob=i, f2 = np.reshape(f2,(self.states.shape[0]-1,self.num_bugs),order='F'),
@@ -499,55 +465,57 @@ class SplineLearnerPOE_4D():
                 # Train F1
                 xplot = self.states[:-1, :, i]
                 bmat_plot = self.calc_bmat(xplot)
-                if train_f1:
-                    mu_theta, sig_theta = self.update_theta(x, theta2, i)
-                    betas = st.multivariate_normal(
-                        mu_theta.squeeze(), sig_theta).rvs()
-                    if s % self.plot_iter == 0 and plot:
-                        plot_f1(self.outdir, xplot, bmat_plot, mu_theta, sig_theta, self.dt, self.gr[i], self.states[:,:,i],i)
-                        plt.show()
-                    
-                    f1 = (x[:-1, :] + x[:-1, :]*self.dt *self.gr[i]).flatten(order='F') + self.dt*(betas@self.calc_bmat(x[:-1, :]).T)
+                if not self.bypass_f1:
+                    if train_f1:
+                        mu_theta, sig_theta = self.update_theta(x, theta2, i)
+                        betas = st.multivariate_normal(
+                            mu_theta.squeeze(), sig_theta).rvs()
+                        if s % self.plot_iter == 0 and plot:
+                            plot_f1(self.outdir, xplot, bmat_plot, mu_theta, sig_theta, self.dt, self.gr[i], self.states[:,:,i],i)
+                            plt.show()
+                        
+                        f1 = (x[:-1, :] + x[:-1, :]*self.dt *self.gr[i]).flatten(order='F') + self.dt*(betas@self.calc_bmat(x[:-1, :]).T)
 
-                else:
-                    # mu_theta = self.true_betas
-                    # betas = mu_theta
-                    f1 = x[1:,:].flatten(order='F')
+                    else:
+                        # mu_theta = self.true_betas
+                        # betas = mu_theta
+                        f1 = x[1:,:].flatten(order='F')
                 # Re-define f1
                 # f1 = (x[:-1, :] + x[:-1, :]*self.dt *self.gr[i]).flatten(order='F') + self.dt*(betas@self.calc_bmat(x[:-1, :]).T)
                 
-                if train_f2:
-                    # xin = x[:-1,:]
-                    if not self.use_mm:
-                        mu2, sig2 = self.update_f2(x,theta2,f1,i)
-                        theta2 = [np.reshape(mu2, (self.num_bugs, self.num_bugs), order='F'),
-                                  np.ones((self.num_bugs, self.num_bugs))]
-                        if s % self.plot_iter == 0 and plot:
-                            plot_f2_linear(self.outdir,
-                                xplot, mu2, sig2, [self.true_a, self.true_b], self.use_mm, self.dt, self.gr[i],i)
-                            plt.show()
-                            # print('Guess:')
-                            # print(theta2)
-                            # print('True:')
-                            # print([self.true_a, self.true_b])
+                if not self.bypass_f2:
+                    if train_f2:
+                        # xin = x[:-1,:]
+                        if not self.use_mm:
+                            mu2, sig2 = self.update_f2(x,theta2,f1,i)
+                            theta2 = [np.reshape(mu2, (self.num_bugs, self.num_bugs), order='F'),
+                                    np.ones((self.num_bugs, self.num_bugs))]
+                            if s % self.plot_iter == 0 and plot:
+                                plot_f2_linear(self.outdir,
+                                    xplot, mu2, sig2, [self.true_a, self.true_b], self.use_mm, self.dt, self.gr[i],i)
+                                plt.show()
+                                # print('Guess:')
+                                # print(theta2)
+                                # print('True:')
+                                # print([self.true_a, self.true_b])
 
-                        # theta2 = [np.reshape(st.multivariate_normal(mu2, sig2).rvs(),(self.num_bugs, self.num_bugs),order ='F'),\
-                        #     np.ones((self.num_bugs,self.num_bugs))]
+                            # theta2 = [np.reshape(st.multivariate_normal(mu2, sig2).rvs(),(self.num_bugs, self.num_bugs),order ='F'),\
+                            #     np.ones((self.num_bugs,self.num_bugs))]
 
-                        # import pdb; pdb.set_trace()
+                            # import pdb; pdb.set_trace()
+                        else:
+                            theta2 = self.update_f2(x,theta2,f1,i)
+                            if s % self.plot_iter == 0 and plot:
+                                plot_f2(self.outdir, xplot, theta2, [
+                                        self.true_a, self.true_b], self.use_mm, self.dt, self.gr[i],i)
+                                plt.show()
+
                     else:
-                        theta2 = self.update_f2(x,theta2,f1,i)
-                        if s % self.plot_iter == 0 and plot:
-                            plot_f2(self.outdir, xplot, theta2, [
-                                    self.true_a, self.true_b], self.use_mm, self.dt, self.gr[i],i)
-                            plt.show()
+                        theta2 = [self.true_a, self.true_b]
+                    f2 = xin + self.dt * \
+                        (self.gr[i]*xin + michaelis_menten(xin, theta2[0], theta2[1],self.use_mm))
 
-                else:
-                    theta2 = [self.true_a, self.true_b]
-                f2 = xin + self.dt * \
-                    (self.gr[i]*xin + michaelis_menten(xin, theta2[0], theta2[1],self.use_mm))
-
-                f2 = f2.flatten(order='F')
+                    f2 = f2.flatten(order='F')
                 if train_var:
                     self.pvar = self.update_pvar(x[1:,:], f1)
                     self.poe_var = self.update_poe(f1, f2)
@@ -589,40 +557,41 @@ class SplineLearnerPOE_4D():
             self.trace_f2.append(self.f2vec)
             self.trace_beta.append(self.betavec)
 
-            if s % 10 == 0 and len(self.trace_a)>1 and train_f2:
-                fig1, axes1 = plt.subplots(self.num_bugs, self.num_bugs, figsize=(15, 15))
-                if self.use_mm:
-                    fig2, axes2 = plt.subplots(
-                        self.num_bugs, self.num_bugs, figsize=(15, 15))
-                for bi in range(self.num_bugs):
-                    for bj in range(self.num_bugs):
-                        a1 = [a[0][bi,bj] for a in self.trace_a]
-                        a2 = [a[1][bi,bj] for a in self.trace_a]
-                        axes1[bi,bj].plot(a1,label = 'A guess, Obs 1')
-                        axes1[bi, bj].plot(a2, label='A guess, Obs 2')
-                        axes1[bi, bj].plot(self.true_a[bi,bj]*np.ones(len(a1)), label='a true')
-                        axes1[bi,bj].set_ylim([self.true_a[bi,bj]-4,self.true_a[bi,bj]+4])
-                        axes1[bi, bj].legend()
+            if plot:
+                if s % 10 == 0 and len(self.trace_a)>1 and train_f2:
+                    fig1, axes1 = plt.subplots(self.num_bugs, self.num_bugs, figsize=(15, 15))
+                    if self.use_mm:
+                        fig2, axes2 = plt.subplots(
+                            self.num_bugs, self.num_bugs, figsize=(15, 15))
+                    for bi in range(self.num_bugs):
+                        for bj in range(self.num_bugs):
+                            a1 = [a[0][bi,bj] for a in self.trace_a]
+                            a2 = [a[1][bi,bj] for a in self.trace_a]
+                            axes1[bi,bj].plot(a1,label = 'A guess, Obs 1')
+                            axes1[bi, bj].plot(a2, label='A guess, Obs 2')
+                            axes1[bi, bj].plot(self.true_a[bi,bj]*np.ones(len(a1)), label='a true')
+                            axes1[bi,bj].set_ylim([self.true_a[bi,bj]-4,self.true_a[bi,bj]+4])
+                            axes1[bi, bj].legend()
 
-                        if self.use_mm:
-                            b1 = [a[0][bi,bj] for a in self.trace_b]
-                            b2 = [a[1][bi,bj] for a in self.trace_b]
-                            axes2[bi,bj].plot(b1, label='B guess, Obs 2')
-                            axes2[bi, bj].plot(b2, label='B guess, Obs 2')
-                            axes2[bi, bj].plot(
-                                self.true_b[bi, bj]*np.ones(len(b1)), label='b true')
-                            axes2[bi, bj].set_ylim(
-                                [self.true_b[bi, bj]-2, self.true_b[bi, bj]+2])
+                            if self.use_mm:
+                                b1 = [a[0][bi,bj] for a in self.trace_b]
+                                b2 = [a[1][bi,bj] for a in self.trace_b]
+                                axes2[bi,bj].plot(b1, label='B guess, Obs 2')
+                                axes2[bi, bj].plot(b2, label='B guess, Obs 2')
+                                axes2[bi, bj].plot(
+                                    self.true_b[bi, bj]*np.ones(len(b1)), label='b true')
+                                axes2[bi, bj].set_ylim(
+                                    [self.true_b[bi, bj]-2, self.true_b[bi, bj]+2])
 
-                            axes2[bi, bj].legend()
+                                axes2[bi, bj].legend()
 
-                fig1.savefig(self.outdir + '_trace_a.png')
-                fig1.show()
-                if self.use_mm:
-                    fig2.savefig(self.outdir + '_trace_b.png')
-                    fig2.show()
-                
-                print('Step ' + str(s) + ' Complete')
+                    fig1.savefig(self.outdir + '_trace_a.png')
+                    fig1.show()
+                    if self.use_mm:
+                        fig2.savefig(self.outdir + '_trace_b.png')
+                        fig2.show()
+                    
+                    print('Step ' + str(s) + ' Complete')
                 with open(self.outdir + '_data_' + str(s), 'wb') as f:
                     pickle.dump([self.trace_a, self.trace_b, self.trace_x, self.trace_f1,\
                         self.trace_f2, self.trace_beta], f)
