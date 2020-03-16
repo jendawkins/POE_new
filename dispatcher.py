@@ -67,7 +67,7 @@ echo $TMPDIR
 module load anaconda/default
 source activate dispatcher
 
-cd /PHShome/jjd65/POE_2/
+cd /PHShome/jjd65/POE_new/
 python3 ./main.py -MM {0} -a {1} -o {2} -gstepps {3} -useF1 {4} -useF2 {5}
 '''
 
@@ -86,9 +86,9 @@ basepath = 'outdir'
 
 for m in use_mm:
     for uf1 in useF1:
-        for uf2 in useF2:
+        for uf2 in useF1:
             for opt in options:
-                outdir = 'outdir_new_opt_' + opt + '_MM' + str(m) + '_useF1_' + str(uf1)
+                outdir = 'outdir_new_opt_' + opt + '_MM' + str(m) + '_useF1_' + str(uf1) + '_useF2_' + str(uf2)
                 print(outdir)
 
                 fname = outdir + '.lsf'

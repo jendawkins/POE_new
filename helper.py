@@ -247,24 +247,24 @@ def plot_f1(outdir, xplot, bmat_plot, mu_theta, sig_theta, dt, gr, true_states,o
     plt.savefig(outdir + '_g1.png')
 
 
-def plot_f2_linear(outdir, xin, mu2, sig2, true_theta, use_mm, dt, gr,ob):
+def plot_f2_linear(outdir, xin, mu2, sig2, true_theta, dt, gr,ob):
     xplot = xin
 
     num_bugs = xin.shape[1]
     g2_mean = michaelis_menten(
-        xplot, np.reshape(mu2, (num_bugs, num_bugs), order='F'), np.ones((num_bugs,num_bugs)), use_mm)
+        xplot, np.reshape(mu2, (num_bugs, num_bugs), order='F'), np.ones((num_bugs,num_bugs)), 0)
 
     theta2_all = st.multivariate_normal(mu2, sig2).rvs(100)
-    theta2_all = [np.reshape(theta2_all[i,:],(num_bugs, num_bugs), order = 'C') for i in range(100)]
+    theta2_all = [np.reshape(theta2_all[i,:],(num_bugs, num_bugs), order = 'F') for i in range(100)]
 
     f2_mean = xplot + dt*(gr*xplot + g2_mean)
 
     g2_plot=[michaelis_menten(
-            xin, theta2_all[ii], np.ones((num_bugs, num_bugs)), use_mm) for ii in range(100)]
+            xin, theta2_all[ii], np.ones((num_bugs, num_bugs)), 0) for ii in range(100)]
     f2_plot = [xplot + dt*(gr*xplot + g2_plot[ii]) for ii in range(100)]
 
     g2_true = michaelis_menten(
-        xplot, true_theta[0], true_theta[1], use_mm)
+        xplot, true_theta[0], true_theta[1], 0)
     f2_true = xplot + dt*(gr*xplot + g2_true)
 
     fig, axes = plt.subplots(1,
