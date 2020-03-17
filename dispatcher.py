@@ -87,6 +87,8 @@ basepath = 'outdir'
 for m in use_mm:
     for uf1 in useF1:
         for uf2 in useF1:
+            if not uf1 and not uf2:
+                continue
             for opt in options:
                 outdir = 'outdir_new_opt_' + opt + '_MM' + str(m) + '_useF1_' + str(uf1) + '_useF2_' + str(uf2)
                 print(outdir)
@@ -94,6 +96,6 @@ for m in use_mm:
                 fname = outdir + '.lsf'
 
                 f = open(fname,'w')
-                f.write(my_str.format(m,opt,outdir,1000,uf1,uf2))
+                f.write(my_str.format(m,opt,outdir,1001,uf1,uf2))
                 f.close()
                 os.system('bsub < {}'.format(fname))

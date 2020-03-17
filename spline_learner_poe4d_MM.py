@@ -299,6 +299,7 @@ class SplineLearnerPOE_4D():
             mu_new = ((1/self.avar)*self.mu_a.flatten(order='F') +
                       X.T@np.linalg.inv(self.poe_var)@g1_aa)@sig_new
         # mu_new = np.reshape(np.linalg.lstsq(X,g1_aa)[0],(self.num_bugs, self.num_bugs),order='F').T.flatten(order='F')
+        mu_new = np.reshape(mu_new,(self.num_bugs,self.num_bugs),order='F').T.flatten(order='F')
 
         return mu_new, sig_new
 
@@ -449,42 +450,7 @@ class SplineLearnerPOE_4D():
             self.trace_f2.append(self.f2vec)
             self.trace_beta.append(self.betavec)
 
-            if s % 10 == 0 and len(self.trace_a) > 1 and train_f2:
-                fig1, axes1 = plt.subplots(
-                    self.num_bugs, self.num_bugs, figsize=(15, 15))
-                if self.use_mm:
-                    fig2, axes2 = plt.subplots(
-                        self.num_bugs, self.num_bugs, figsize=(15, 15))
-                for bi in range(self.num_bugs):
-                    for bj in range(self.num_bugs):
-                        a1 = [a[0][bi, bj] for a in self.trace_a]
-                        a2 = [a[1][bi, bj] for a in self.trace_a]
-                        axes1[bi, bj].plot(a1, label='A guess, Obs 1')
-                        axes1[bi, bj].plot(a2, label='A guess, Obs 2')
-                        axes1[bi, bj].plot(
-                            self.true_a[bi, bj]*np.ones(len(a1)), label='a true')
-                        axes1[bi, bj].set_ylim(
-                            [self.true_a[bi, bj]-4, self.true_a[bi, bj]+4])
-                        axes1[bi, bj].legend()
-
-                        if self.use_mm:
-                            b1 = [a[0][bi, bj] for a in self.trace_b]
-                            b2 = [a[1][bi, bj] for a in self.trace_b]
-                            axes2[bi, bj].plot(b1, label='B guess, Obs 2')
-                            axes2[bi, bj].plot(b2, label='B guess, Obs 2')
-                            axes2[bi, bj].plot(
-                                self.true_b[bi, bj]*np.ones(len(b1)), label='b true')
-                            axes2[bi, bj].set_ylim(
-                                [self.true_b[bi, bj]-2, self.true_b[bi, bj]+2])
-
-                            axes2[bi, bj].legend()
-
-                fig1.savefig(self.outdir + '_trace_a.png')
-                fig1.show()
-                if self.use_mm:
-                    fig2.savefig(self.outdir + '_trace_b.png')
-                    fig2.show()
-
+            if s % 100 == 0 and len(self.trace_a) > 1:
                 print('Step ' + str(s) + ' Complete')
                 with open(self.outdir + '_data_' + str(s), 'wb') as f:
                     pickle.dump([self.trace_a, self.trace_b, self.trace_x, self.trace_f1,
