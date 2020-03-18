@@ -68,7 +68,7 @@ module load anaconda/default
 source activate dispatcher
 
 cd /PHShome/jjd65/POE_new/
-python3 ./main.py -MM {0} -a {1} -o {2} -gstepps {3} -useF1 {4} -useF2 {5}
+python3 ./main.py -MM {0} -a {1} -o {2} -gstepps {3} -useF1 {4} -useF2 {5} -bmat {6}
 '''
 
 # Make the directories to store the information
@@ -83,19 +83,21 @@ python3 ./main.py -MM {0} -a {1} -o {2} -gstepps {3} -useF1 {4} -useF2 {5}
 options = {'cooperation3','competing2','competing3a','competing3b'}
 useF1 = {True, False}
 basepath = 'outdir'
+bmat = {'new','old'}
 
 for m in use_mm:
-    for uf1 in useF1:
-        for uf2 in useF1:
-            if not uf1 and not uf2:
-                continue
-            for opt in options:
-                outdir = 'outdir_new_opt_' + opt + '_MM' + str(m) + '_useF1_' + str(uf1) + '_useF2_' + str(uf2)
-                print(outdir)
+    for bm in bmat:
+        for uf1 in useF1:
+            for uf2 in useF1:
+                if not uf1 and not uf2:
+                    continue
+                for opt in options:
+                    outdir = bm + '_outdir_new_opt_' + opt + '_MM' + str(m) + '_useF1_' + str(uf1) + '_useF2_' + str(uf2)
+                    print(outdir)
 
-                fname = outdir + '.lsf'
+                    fname = outdir + '.lsf'
 
-                f = open(fname,'w')
-                f.write(my_str.format(m,opt,outdir,1001,uf1,uf2))
-                f.close()
-                os.system('bsub < {}'.format(fname))
+                    f = open(fname,'w')
+                    f.write(my_str.format(m,opt,outdir,1001,uf1,uf2,bm))
+                    f.close()
+                    os.system('bsub < {}'.format(fname))

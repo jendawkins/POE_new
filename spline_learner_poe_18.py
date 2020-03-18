@@ -7,7 +7,7 @@ from datetime import datetime
 import pickle
 
 
-class SplineLearnerPOE_4D():
+class SplineLearnerPOE_NewB():
     def __init__(self, use_mm=1, bypass_f1=False, bypass_f2 = False, a='cooperation3', b=0.1, num_bact=3, MEAS_VAR=.1, PROC_VAR=.001, THETA_VAR=.6, AVAR=.01, BVAR=1, POE_VAR=1, NSAMPS=2, TIME=4, DT=.1, gr=5, outdir='outdir'):
         NPTSPERSAMP = int(TIME/DT)
         self.time = TIME
@@ -81,11 +81,10 @@ class SplineLearnerPOE_4D():
         self.num_knots = int((self.num_states-self.k)/2)
 
         # Maybe redo this:
-        self.mu_betas = np.mean(np.array([[[self.xin[n][0, i]*self.xin[n][0, j]*np.ones(self.num_knots)
-                                            for i in range(self.num_bugs)] for j in range(self.num_bugs)] for n in range(self.num_mice)]), 0)
+        self.mu_betas = np.zeros(self.num_knots)
 
-        self.knots = np.array([[np.linspace(min(self.X1[:, i]*self.X1[:, j]) - .01, max(
-            self.X1[:, i]*self.X1[:, j])+.01, self.num_knots) for i in range(self.num_bugs)] for j in range(self.num_bugs)])
+        self.knots = np.array([np.linspace(min(
+            self.X1[:, i]) - .01, max(self.X1[:, i])+.01, self.num_knots) for i in range(self.num_bugs)])
 
         self.poe_var = POE_VAR*np.eye(self.num_bugs*(self.num_states-1))
         self.beta_poevar = self.poe_var / (self.alpha - 1)
@@ -98,8 +97,6 @@ class SplineLearnerPOE_4D():
 
         self.states = np.transpose(self.states, (1, 2, 0))
         self.observations = np.transpose(self.observations, (1, 2, 0))
-        self.true_bmat1 = np.concatenate(
-            [self.calc_bmat(self.states[:-1, :, i]) for i in range(self.num_mice)], 0)
         self.mu_a = -.5*np.eye(self.num_bugs)
         self.mu_b = .1*np.ones((self.num_bugs, self.num_bugs))
         # self.true_betas = np.linalg.lstsq(self.true_bmat1, self.Y)
@@ -111,37 +108,34 @@ class SplineLearnerPOE_4D():
 
         self.use_mm = 0
 
-    def bsplines(self, xi, x, bug1, bug2, k=3):
+
+    def bsplines(self,xi, x, b, k=3):
         # knots = np.linspace(x.min() + .01, x.max()-.01, num_knots)
-        bmat = np.zeros((len(self.knots[bug1, bug2]), k))
+        bmat = np.zeros((self.num_knots, k))
         for ki in range(k):
-            for i in np.arange(len(self.knots[bug1, bug2])-ki-2, 0, -1):
+            for i in np.arange(self.num_knots-ki-2, 0, -1):
                 if ki == 0:
-                    if self.knots[bug1, bug2][i] <= xi <= self.knots[bug1, bug2][i+1]:
+                    if self.knots[b, i] <= xi <= self.knots[b, i+1]:
                         bmat[i, ki] = 1
                     else:
                         bmat[i, ki] = 0
                 else:
-                    bmat[i, ki] = ((xi-self.knots[bug1, bug2][i])*bmat[i, ki-1])/(self.knots[bug1, bug2][i+ki+1-1]-self.knots[bug1, bug2][i]) + (
-                        (self.knots[bug1, bug2][i+ki+1] - xi)*bmat[i+1, ki-1])/(self.knots[bug1, bug2][i+ki+1]-self.knots[bug1, bug2][i+1])
-                    # import pdb; pdb.set_trace()
+                    bmat[i, ki] = ((xi-self.knots[b, i])*bmat[i, ki-1])/(self.knots[b, i+ki+1-1]-self.knots[b, i]) + (
+                        (self.knots[b, i+ki+1] - xi)*bmat[i+1, ki-1])/(self.knots[b, i+ki+1]-self.knots[b, i+1])
         return bmat
 
-    def calc_bmat(self, X, k=3):
-        bmat = np.zeros((X.shape[0], self.num_bugs,
-                         self.num_bugs, self.num_knots))
-        for t in range(X.shape[0]):
-            bmat_mini = np.array([[self.bsplines(X[t, i]*X[t, j], np.array(X), i, j)[:, k-1]
-                                   for i in range(X.shape[1])] for j in range(X.shape[1])])
-            bmat[t, :, :, :] = bmat_mini
-        bmat_full = []
-        for i in range(self.num_bugs):
-            r1 = np.array([bmat[t, i, :, :].flatten()
-                           for t in range(X.shape[0])])
-            bmat_full.append(r1)
-        bmat_fin = diag_mat(bmat_full)
 
-        return bmat_fin
+    def calc_bmat(self, x, k=3):
+        nknots = self.num_knots
+        bmat = np.zeros((self.num_bugs, len(x), nknots))
+        for b in range(self.num_bugs):
+            for i in range(x.shape[0]):
+                bmat[b, i, :] = self.bsplines(
+                    x[i, b], np.array(x[:, b]), b)[:, k-1]
+
+        bmat = np.reshape(
+            bmat, (bmat.shape[0]*bmat.shape[1], bmat.shape[2]), order='F')
+        return bmat
 
     def calc_func_vals(self, x, betas, theta_2, ob):
         bmat = self.calc_bmat(x[:-1, :])
@@ -238,6 +232,7 @@ class SplineLearnerPOE_4D():
         prob_keep = np.exp(np.sum(num, 0) - np.sum(dem, 0))
 
         prob_keep = prob_keep + self.frac
+
         idxs = np.where(prob_keep > 1)
         # print('Keep New from bug ' + str(idxs))
         x[0, idxs] = xp[0, idxs]
@@ -267,7 +262,9 @@ class SplineLearnerPOE_4D():
             num = self.px(xp, y, x0, betas, theta_2, ob)
             dem = self.px(x, y, x0, betas, theta_2, ob)
             prob_keep = np.exp(np.sum(num, 0) - np.sum(dem, 0))
+
             prob_keep = prob_keep + self.frac
+
             idxs = np.where(prob_keep > 1)
             x[i, idxs] = xp[i, idxs]
             proposed_x[i, :] = xnext
@@ -284,8 +281,12 @@ class SplineLearnerPOE_4D():
         # sig_new = np.linalg.inv(X.T@np.linalg.inv(self.poe_var)@X +
         #                         np.linalg.inv(self.avar*np.eye(self.num_bugs**2)))
 
-            sig_new = np.linalg.inv(
-                X.T@(np.linalg.inv(self.pvar))@X + 1/self.avar)
+            try:
+                sig_new = np.linalg.inv(
+                    X.T@(np.linalg.inv(self.pvar))@X + 1/self.avar)
+            except:
+                sig_new = np.linalg.inv(
+                    X.T@(np.linalg.inv(self.pvar))@X + (1/self.avar)*np.eye(self.pvar.shape[0]))
             mu_new = ((1/self.avar)*self.mu_a.flatten(order='F') +
                       X.T@(np.linalg.inv(self.pvar))@g1_aa)@sig_new
         else:
@@ -293,8 +294,12 @@ class SplineLearnerPOE_4D():
                 f1, (self.num_states-1, self.num_bugs), order='F')
             g1_a = (f1_a1 - xin - xin*self.gr[ob]*self.dt)/(self.dt*xin)
             g1_aa = g1_a.flatten(order='F')
-            sig_new = np.linalg.inv(
-                X.T@np.linalg.inv(self.poe_var)@X + 1/self.avar)
+            try:
+                sig_new = np.linalg.inv(
+                    X.T@np.linalg.inv(self.poe_var)@X + 1/self.avar)
+            except:
+                sig_new = np.linalg.inv(
+                    X.T@np.linalg.inv(self.poe_var)@X + (1/self.avar)*np.eye(self.poe_var.shape[0]))
             mu_new = ((1/self.avar)*self.mu_a.flatten(order='F') +
                       X.T@np.linalg.inv(self.poe_var)@g1_aa)@sig_new
         # mu_new = np.reshape(np.linalg.lstsq(X,g1_aa)[0],(self.num_bugs, self.num_bugs),order='F').T.flatten(order='F')
@@ -359,7 +364,7 @@ class SplineLearnerPOE_4D():
             self.frac = (gibbs_steps/2 - s)/(gibbs_steps/2)
             if self.frac < 0:
                 self.frac = 0
-
+            
             for i in range(self.observations.shape[-1]):
                 now = datetime.now()
                 date_time = now.strftime("%m-%d-%Y_%H-%M-%S")
