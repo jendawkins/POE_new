@@ -281,12 +281,8 @@ class SplineLearnerPOE_NewB():
         # sig_new = np.linalg.inv(X.T@np.linalg.inv(self.poe_var)@X +
         #                         np.linalg.inv(self.avar*np.eye(self.num_bugs**2)))
 
-            try:
-                sig_new = np.linalg.inv(
-                    X.T@(np.linalg.inv(self.pvar))@X + 1/self.avar)
-            except:
-                sig_new = np.linalg.inv(
-                    X.T@(np.linalg.inv(self.pvar))@X + (1/self.avar)*np.eye(self.pvar.shape[0]))
+            sig_new = np.linalg.inv(
+                X.T@(np.linalg.inv(self.pvar))@X + (1/self.avar)*np.eye(X.shape[1]))
             mu_new = ((1/self.avar)*self.mu_a.flatten(order='F') +
                       X.T@(np.linalg.inv(self.pvar))@g1_aa)@sig_new
         else:
@@ -294,12 +290,8 @@ class SplineLearnerPOE_NewB():
                 f1, (self.num_states-1, self.num_bugs), order='F')
             g1_a = (f1_a1 - xin - xin*self.gr[ob]*self.dt)/(self.dt*xin)
             g1_aa = g1_a.flatten(order='F')
-            try:
-                sig_new = np.linalg.inv(
-                    X.T@np.linalg.inv(self.poe_var)@X + 1/self.avar)
-            except:
-                sig_new = np.linalg.inv(
-                    X.T@np.linalg.inv(self.poe_var)@X + (1/self.avar)*np.eye(self.poe_var.shape[0]))
+            sig_new = np.linalg.inv(
+                X.T@np.linalg.inv(self.poe_var)@X + (1/self.avar)*np.eye(X.shape[1]))
             mu_new = ((1/self.avar)*self.mu_a.flatten(order='F') +
                       X.T@np.linalg.inv(self.poe_var)@g1_aa)@sig_new
         # mu_new = np.reshape(np.linalg.lstsq(X,g1_aa)[0],(self.num_bugs, self.num_bugs),order='F').T.flatten(order='F')

@@ -285,7 +285,7 @@ class SplineLearnerPOE_4D():
         #                         np.linalg.inv(self.avar*np.eye(self.num_bugs**2)))
 
             sig_new = np.linalg.inv(
-                X.T@(np.linalg.inv(self.pvar))@X + 1/self.avar)
+                X.T@(np.linalg.inv(self.pvar))@X + (1/self.avar)*np.eye(X.shape[1]))
             mu_new = ((1/self.avar)*self.mu_a.flatten(order='F') +
                       X.T@(np.linalg.inv(self.pvar))@g1_aa)@sig_new
         else:
@@ -294,7 +294,8 @@ class SplineLearnerPOE_4D():
             g1_a = (f1_a1 - xin - xin*self.gr[ob]*self.dt)/(self.dt*xin)
             g1_aa = g1_a.flatten(order='F')
             sig_new = np.linalg.inv(
-                X.T@np.linalg.inv(self.poe_var)@X + 1/self.avar)
+                    X.T@np.linalg.inv(self.poe_var)@X + (1/self.avar)*np.eye(X.shape[1]))
+
             mu_new = ((1/self.avar)*self.mu_a.flatten(order='F') +
                       X.T@np.linalg.inv(self.poe_var)@g1_aa)@sig_new
         # mu_new = np.reshape(np.linalg.lstsq(X,g1_aa)[0],(self.num_bugs, self.num_bugs),order='F').T.flatten(order='F')
