@@ -8,7 +8,7 @@ import pickle
 
 
 class SplineLearnerPOE_4D():
-    def __init__(self, use_mm=1, bypass_f1=False, bypass_f2 = False, a='cooperation3', b=0.1, num_bact=3, MEAS_VAR=.1, PROC_VAR=.001, THETA_VAR=1, AVAR=1, BVAR=1, POE_VAR=1, NSAMPS=2, TIME=4, DT=.1, gr=5, outdir='outdir'):
+    def __init__(self, use_mm=1, bypass_f1=False, bypass_f2 = False, a='cooperation3', b=0.1, num_bact=3, MEAS_VAR=.1, PROC_VAR=.001, THETA_VAR=.6, AVAR=.01, BVAR=1, POE_VAR=1, NSAMPS=2, TIME=4, DT=.1, gr=5, outdir='outdir'):
         NPTSPERSAMP = int(TIME/DT)
         self.time = TIME
         self.num_bugs = num_bact
@@ -174,11 +174,9 @@ class SplineLearnerPOE_4D():
             Y_est) + (bmat.T@np.linalg.inv(self.poe_var))@(f2_flat))@sig_post
         
         if self.bypass_f2:
-            sig_post = np.linalg.inv((1/self.theta_var)*np.eye(bmat.shape[1]) + self.dt*bmat.T@np.linalg.inv(
-                self.pvar*self.dt)@bmat*self.dt)
+            sig_post = np.linalg.inv((1/self.theta_var)*np.eye(bmat.shape[1]) + self.dt*bmat.T@np.linalg.inv(self.pvar*self.dt)@bmat*self.dt)
 
-            mu_post = ((self.dt*bmat.T@np.linalg.inv(self.pvar*self.dt))@(
-                Y_est))@sig_post
+            mu_post = ((self.dt*bmat.T@np.linalg.inv(self.pvar*self.dt))@(Y_est))@sig_post
         
         return mu_post, sig_post
 
