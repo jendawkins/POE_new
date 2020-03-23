@@ -395,7 +395,6 @@ class SplineLearnerPOE_4D():
                         theta2 = [np.reshape(mu2, (self.num_bugs, self.num_bugs), order='F'),
                                     np.ones((self.num_bugs, self.num_bugs))]
 
-                        import pdb; pdb.set_trace()
                         if s % self.plot_iter == 0 and plot:
                             plot_f2_linear(self.outdir,
                                             xplot, mu2, sig2, [self.true_a, self.true_b], self.dt, self.gr[i], i)
