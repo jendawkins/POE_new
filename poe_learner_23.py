@@ -8,7 +8,7 @@ import pickle
 
 
 class SplineLearnerPOE_4D():
-    def __init__(self, use_mm=1, bypass_f1=False, bypass_f2 = False, a='cooperation3', b=0.1, num_bact=3, MEAS_VAR=.1, PROC_VAR=.001, THETA_VAR=.7, AVAR=.01, BVAR=1, POE_VAR=1, NSAMPS=2, TIME=4, DT=.1, gr=5, outdir='outdir'):
+    def __init__(self, use_mm=1, bypass_f1=False, bypass_f2 = False, a='cooperation3', b=0.1, num_bact=3, MEAS_VAR=.1, PROC_VAR=.001, THETA_VAR=.7, AVAR=.01, BVAR=1, POE_VAR=1, NSAMPS=4, TIME=4, DT=.1, gr=5, outdir='outdir'):
         NPTSPERSAMP = int(TIME/DT)
         self.time = TIME
         self.num_bugs = num_bact
