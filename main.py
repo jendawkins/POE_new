@@ -1,5 +1,4 @@
-from spline_learner_poe4d_MM import *
-from spline_learner_poe_18 import *
+from poe_learner_23 import *
 import sys, getopt
 import argparse
 import os
@@ -30,7 +29,7 @@ def main():
     parser.add_argument("-o", "--outdir", help="out directory", type=str)
     parser.add_argument("-useF1", "--useF1", help="use f1 or not", type=bool)
     parser.add_argument("-useF2", "--useF2", help="use f2 or not", type=bool)
-    parser.add_argument("-bmat", "--bmat", help="type of bmat", type=str)
+    # parser.add_argument("-bmat", "--bmat", help="type of bmat", type=str)
 
     args = parser.parse_args()
 
@@ -47,18 +46,18 @@ def main():
     #                     DT=args.delta_t,outdir = args.outdir)
     # elif args.use_mm and args.aval and args.outdir:
 
-    if args.bmat == 'old':
-        spl = SplineLearnerPOE_4D(
-            use_mm=args.use_mm, a=args.aval, outdir=args.outdir, bypass_f1=args.useF1,bypass_f2=args.useF2)
-        with open(args.outdir + '_class', 'wb') as f:
-            pickle.dump(spl, f)
-        spl.run(gibbs_steps=args.gibbs_steps, plot = False)
-    if args.bmat == 'new':
-        spln = SplineLearnerPOE_NewB(
-            use_mm=args.use_mm, a=args.aval, outdir=args.outdir, bypass_f1=args.useF1, bypass_f2=args.useF2)
-        with open(args.outdir + '_class', 'wb') as f:
-            pickle.dump(spl, f)
-        spln.run(gibbs_steps=args.gibbs_steps, plot = False)
+    # if args.bmat == 'old':
+    spl = SplineLearnerPOE_4D(
+        use_mm=args.use_mm, a=args.aval, outdir=args.outdir, bypass_f1=args.useF1,bypass_f2=args.useF2)
+    with open(args.outdir + '_class', 'wb') as f:
+        pickle.dump(spl, f)
+    spl.run(gibbs_steps=args.gibbs_steps, plot = False)
+    # if args.bmat == 'new':
+    #     spln = SplineLearnerPOE_NewB(
+    #         use_mm=args.use_mm, a=args.aval, outdir=args.outdir, bypass_f1=args.useF1, bypass_f2=args.useF2)
+    #     with open(args.outdir + '_class', 'wb') as f:
+    #         pickle.dump(spl, f)
+    #     spln.run(gibbs_steps=args.gibbs_steps, plot = False)
 
 if __name__ == "__main__":
    main()
