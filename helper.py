@@ -25,6 +25,29 @@ def michaelis_menten(x, a, b, ii):
             [a[i, i]*(x[k, i]**2) for i in range(a.shape[0])]))
     return np.sum(out2, 1).T
 
+def plot_f2_2(mu_a, var_a, spl):
+    a_samps = st.multivariate_normal(mu_a,var_a).rvs(size = (100))
+    a_samps = [np.reshape(a_samps[n,:],(spl.num_bugs,spl.num_bugs),order='F') for n in range(100)]
+
+    num_mice = 5
+    fig,axes = plt.subplots(num_bugs,num_mice,figsize = (30,10))
+    tvec = np.arange(0,spl.time+2*spl.dt,spl.dt)
+    for o in range(num_mice):
+        xin_o = [st.truncnorm(0,.3).rvs(size=(1,2)) for i in range(num_mice)]
+        x = [generate_data_MM(a_samp, b_samp, spl.gr[0],xin_o[o],spl.dt,spl.num_states) for a_samp in a_samps]
+        xtrue = generate_data_MM(spl.true_a, b_samp, spl.gr[0],xin_o[o],spl.dt,spl.num_states)
+
+        for b in range(num_bugs):
+            axes[b,o].set_title('Bug ' + str(b)+', Obs ' + str(o) + ', ' + ', step '+ f.split('_')[-1] + ' ' +d.split('_')[4] + ' '+ d.split('_')[5] + ' '+ d.split('_')[6] +' ' +d.split('_')[7] + ' '+ d.split('_')[8])
+            for n in range(100):
+                if n == 0:
+                    axes[b,o].plot(tvec, x[n][:,b], label = 'Predicted states',color='C1',linewidth = 1)
+                else:
+                    axes[b,o].plot(tvec, x[n][:,b],color='C1',linewidth = 1)
+            axes[b,o].plot(tvec, xtrue[:,b],label = 'States',color='C2')
+            axes[b,o].set_ylim([0,10])
+            axes[b,o].legend()
+            
 def generate_data_MM(a, b, r, xinn, resolution, ii, mvar, pvar, nsamps, nptspersample, seed=4):
 
     # a2 = 0

@@ -30,7 +30,7 @@ def main():
     parser.add_argument("-o", "--outdir", help="out directory", type=str)
     parser.add_argument("-useF1", "--useF1", help="use f1 or not", type=bool)
     parser.add_argument("-useF2", "--useF2", help="use f2 or not", type=bool)
-    parser.add_argument("-bmat", "--Bmat_type", help="type of bmat", type=str)
+    parser.add_argument("-bmat", "--bmat", help="type of bmat", type=str)
 
     args = parser.parse_args()
 

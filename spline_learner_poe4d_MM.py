@@ -8,7 +8,7 @@ import pickle
 
 
 class SplineLearnerPOE_4D():
-    def __init__(self, use_mm=1, bypass_f1=False, bypass_f2 = False, a='cooperation3', b=0.1, num_bact=3, MEAS_VAR=.1, PROC_VAR=.001, THETA_VAR=.6, AVAR=.01, BVAR=1, POE_VAR=1, NSAMPS=2, TIME=4, DT=.1, gr=5, outdir='outdir'):
+    def __init__(self, use_mm=1, bypass_f1=False, bypass_f2 = False, a='cooperation3', b=0.1, num_bact=3, MEAS_VAR=.1, PROC_VAR=.001, THETA_VAR=.7, AVAR=.01, BVAR=1, POE_VAR=1, NSAMPS=2, TIME=4, DT=.1, gr=5, outdir='outdir'):
         NPTSPERSAMP = int(TIME/DT)
         self.time = TIME
         self.num_bugs = num_bact
@@ -81,11 +81,12 @@ class SplineLearnerPOE_4D():
         self.num_knots = int((self.num_states-self.k)/2)
 
         # Maybe redo this:
-        self.mu_betas = np.mean(np.array([[[self.xin[n][0, i]*self.xin[n][0, j]*np.ones(self.num_knots)
-                                            for i in range(self.num_bugs)] for j in range(self.num_bugs)] for n in range(self.num_mice)]), 0)
+        self.mu_betas = np.mean(np.array([[[np.zeros(self.num_knots)
+                                            for i in range(self.num_bugs)] for j in range(self.num_bugs)] 
+                                            for n in range(self.num_mice)]), 0)
 
-        self.knots = np.array([[np.linspace(min(self.X1[:, i]*self.X1[:, j]) - .01, max(
-            self.X1[:, i]*self.X1[:, j])+.01, self.num_knots) for i in range(self.num_bugs)] for j in range(self.num_bugs)])
+        self.knots = np.array([[np.linspace(min(self.X1[:, i]*self.X1[:, j]) - 5, max(
+            self.X1[:, i]*self.X1[:, j])+5, self.num_knots) for i in range(self.num_bugs)] for j in range(self.num_bugs)])
 
         self.poe_var = POE_VAR*np.eye(self.num_bugs*(self.num_states-1))
         self.beta_poevar = self.poe_var / (self.alpha - 1)
@@ -109,7 +110,6 @@ class SplineLearnerPOE_4D():
         Y_est = np.concatenate([Y_est0[i].flatten(order='F')
                                 for i in range(self.num_mice)], 0)
 
-        self.use_mm = 0
 
     def bsplines(self, xi, x, bug1, bug2, k=3):
         # knots = np.linspace(x.min() + .01, x.max()-.01, num_knots)
