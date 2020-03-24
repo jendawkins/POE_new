@@ -393,24 +393,50 @@ def plot_f2(outdir, xin, theta2, theta_true, use_mm, dt, gr,ob):
     plt.savefig(outdir + '_g2.png')
 
 
-def plot_f2_2(mu_a, var_a, spl):
+def plot_f2_2(mu_a, var_a, o, spl):
     a_samps = st.multivariate_normal(mu_a, var_a).rvs(size=(100))
     a_samps = [np.reshape(a_samps[n, :], (spl.num_bugs,
                                           spl.num_bugs), order='F') for n in range(100)]
-
-    num_mice = 5
-    fig, axes = plt.subplots(num_bugs, num_mice, figsize=(30, 10))
+    b_samp = np.ones(a_samps[0].shape)
+    num_mice = spl.num_mice
+    fig, axes = plt.subplots(spl.num_bugs, spl.num_mice, figsize=(30, 10))
     tvec = np.arange(0, spl.time+2*spl.dt, spl.dt)
     for o in range(num_mice):
-        xin_o = [st.truncnorm(0, .3).rvs(size=(1, 2)) for i in range(num_mice)]
-        x = [generate_data_MM2(a_samp, b_samp, spl.gr[0], xin_o[o],
+        xin_o = [st.truncnorm(0, .3).rvs(size=(1, spl.num_bugs)) for i in range(num_mice)]
+        x = [generate_data_MM2(a_samp, b_samp, spl.gr[o], xin_o[o],
                               spl.dt, spl.num_states) for a_samp in a_samps]
         xtrue = generate_data_MM2(
             spl.true_a, b_samp, spl.gr[0], xin_o[o], spl.dt, spl.num_states)
 
-        for b in range(num_bugs):
-            axes[b, o].set_title('Bug ' + str(b)+', Obs ' + str(o) + ', ' + ', step ' + f.split('_')[-1] + ' ' + d.split(
-                '_')[4] + ' ' + d.split('_')[5] + ' ' + d.split('_')[6] + ' ' + d.split('_')[7] + ' ' + d.split('_')[8])
+        for b in range(spl.num_bugs):
+            axes[b, o].set_title('Bug ' + str(b)+', Obs ' + str(o))
+            for n in range(100):
+                if n == 0:
+                    axes[b, o].plot(
+                        tvec, x[n][:, b], label='Predicted states', color='C1', linewidth=1)
+                else:
+                    axes[b, o].plot(tvec, x[n][:, b], color='C1', linewidth=1)
+            axes[b, o].plot(tvec, xtrue[:, b], label='States', color='C2')
+            axes[b, o].set_ylim([0, 10])
+            axes[b, o].legend()
+
+
+def plot_f1_2(mu_theta, var_theta, o, spl):
+    theta_samps = st.multivariate_normal(mu_theta, var_theta).rvs(size=(100))
+    b_samp = np.ones((spl.num_bugs,spl.num_bugs))
+    num_mice = spl.num_mice
+    fig, axes = plt.subplots(spl.num_bugs, spl.num_mice, figsize=(30, 10))
+    tvec = np.arange(0, spl.time+2*spl.dt, spl.dt)
+    for o in range(num_mice):
+        xin_o = [st.truncnorm(0, .3).rvs(size=(1, spl.num_bugs))
+                 for i in range(num_mice)]
+        x = [generate_data_betas(theta_samp, spl, spl.gr[o],\
+            xin_o[o],spl.dt,spl.num_states) for theta_samp in theta_samps]
+        xtrue = generate_data_MM2(
+            spl.true_a, b_samp, spl.gr[0], xin_o[o], spl.dt, spl.num_states)
+
+        for b in range(spl.num_bugs):
+            axes[b, o].set_title('Bug ' + str(b)+', Obs ' + str(o))
             for n in range(100):
                 if n == 0:
                     axes[b, o].plot(

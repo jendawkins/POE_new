@@ -1,4 +1,4 @@
-from helper import *
+from helper2 import *
 import numpy as np
 import scipy.stats as st
 import matplotlib.pyplot as plt
@@ -8,10 +8,9 @@ import pickle
 
 
 class SplineLearnerPOE_4D():
-    def __init__(self, use_mm=1, bypass_f1=False, bypass_f2 = False, a='cooperation3', b=0.1, num_bact=3, MEAS_VAR=.1, PROC_VAR=.001, THETA_VAR=.7, AVAR=.01, BVAR=1, POE_VAR=1, NSAMPS=4, TIME=4, DT=.1, gr=5, outdir='outdir'):
+    def __init__(self, use_mm=1, bypass_f1=False, bypass_f2=False, a='competing2', b=0.1, MEAS_VAR=.1, PROC_VAR=.001, THETA_VAR=.7, AVAR=.01, BVAR=1, POE_VAR=1, NSAMPS=4, TIME=4, DT=.1, gr=5, outdir='outdir'):
         NPTSPERSAMP = int(TIME/DT)
         self.time = TIME
-        self.num_bugs = num_bact
         self.bypass_f1 = bypass_f1
         self.bypass_f2 = bypass_f2
         self.use_mm = use_mm
@@ -23,13 +22,16 @@ class SplineLearnerPOE_4D():
         if isinstance(a, str):
             if a == 'cooperation3':
                 amat = np.array([[-1, 0, 1], [1, -1, 1], [0, 1, -1]])
+                self.num_bugs = 3
             elif a == 'competing2':
                 amat = np.array([[-1, -1], [1, -1]])
                 self.num_bugs = 2
             elif a == 'competing3a':
                 amat = np.array([[-1, 0, 1], [-1, -1, 0], [0, 1, -1]])
+                self.num_bugs = 3
             elif a == 'competing3b':
                 amat = np.array([[-1, -1, 0], [1, -1, 1], [1, 0, -1]])
+                self.num_bugs = 3
             else:
                 print('Provide valid option')
         else:
@@ -42,9 +44,9 @@ class SplineLearnerPOE_4D():
         else:
             self.true_b = np.ones((self.num_bugs, self.num_bugs))
         a2 = 0
-        b2 = np.sum(self.true_b, 1)
+        b2 = .3
         np.random.seed(4)
-        self.xin = [st.truncnorm(a2, b2).rvs(size=(1, num_bact)) for i in range(NSAMPS)]
+        self.xin = [st.truncnorm(a2, b2).rvs(size=(1, self.num_bugs)) for i in range(NSAMPS)]
         self.gr = gr*np.ones(NSAMPS)
 
         self.mvar = MEAS_VAR
@@ -380,8 +382,9 @@ class SplineLearnerPOE_4D():
                         betas = st.multivariate_normal(
                             mu_theta.squeeze(), sig_theta).rvs()
                         if s % self.plot_iter == 0 and plot:
-                            plot_f1(self.outdir, xplot, bmat_plot, mu_theta,
-                                    sig_theta, self.dt, self.gr[i], self.states[:, :, i], i)
+                            plot_f1_2(mu_theta, sig_theta, i, self)
+                            # plot_f1(self.outdir, xplot, bmat_plot, mu_theta,
+                            #         sig_theta, self.dt, self.gr[i], self.states[:, :, i], i)
                             plt.show()
 
                         f1 = (x[:-1, :] + x[:-1, :]*self.dt * self.gr[i]).flatten(
@@ -396,8 +399,9 @@ class SplineLearnerPOE_4D():
                                     np.ones((self.num_bugs, self.num_bugs))]
 
                         if s % self.plot_iter == 0 and plot:
-                            plot_f2_linear(self.outdir,
-                                            xplot, mu2, sig2, [self.true_a, self.true_b], self.dt, self.gr[i], i)
+                            # plot_f2_linear(self.outdir,
+                            #                 xplot, mu2, sig2, [self.true_a, self.true_b], self.dt, self.gr[i], i)
+                            plot_f2_2(mu2, sig2, i, self)
                             plt.show()
 
 
