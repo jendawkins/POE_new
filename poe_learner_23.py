@@ -8,7 +8,7 @@ import pickle
 
 
 class SplineLearnerPOE_4D():
-    def __init__(self, use_mm=1, bypass_f1=False, bypass_f2=False, a='competing2', b=0.1, MEAS_VAR=.1, PROC_VAR=.001, THETA_VAR=.7, AVAR=.01, BVAR=1, POE_VAR=1, NSAMPS=4, TIME=4, DT=.1, gr=5, outdir='outdir'):
+    def __init__(self, use_mm=1, bypass_f1=False, bypass_f2=False, a='competing2', b=0.1, MEAS_VAR=.1, PROC_VAR=.001, THETA_VAR=1e7, AVAR=.01, BVAR=1, POE_VAR=1, NSAMPS=4, TIME=4, DT=.1, gr=5, outdir='outdir'):
         NPTSPERSAMP = int(TIME/DT)
         self.time = TIME
         self.bypass_f1 = bypass_f1
@@ -284,11 +284,14 @@ class SplineLearnerPOE_4D():
         return st.invgamma(alpha_post, beta_post).rvs()*np.eye(len(f1.squeeze()))
 
     def update_pvar(self, states, f1):
+        # f1 - x[1:,:]
         f1 = np.expand_dims(f1, 0)
+        n = states.shape[0]
         states = np.expand_dims(states.flatten(order='F'), 0)
         beta_post = self.beta_pvar + 0.5*(states-f1).T@(states-f1)
-        alpha_post = self.alpha + (len(f1)/self.num_bugs)/2
-        return st.invgamma(alpha_post, beta_post).rvs()*np.eye(len(f1.squeeze()))
+
+        alpha_post = self.alpha + n/2
+        return st.invgamma(alpha_post, beta_post).rvs()*np.eye(len(f1.squeeze()))/self.dt
 
     # def update_mvar(self, states, obs):
     #     beta_m_post = self.beta_mvar + 0.5*(obs - states).T@(obs - states)
@@ -332,6 +335,7 @@ class SplineLearnerPOE_4D():
             self.frac = (gibbs_steps - s)/(gibbs_steps)
             if self.frac < 0:
                 self.frac = 0
+            # self.frac = 0
 
             for i in range(self.observations.shape[-1]):
                 now = datetime.now()
@@ -430,7 +434,8 @@ class SplineLearnerPOE_4D():
             self.trace_f2.append(self.f2vec)
             self.trace_beta.append(self.betavec)
 
-            if s % 100 == 0 and len(self.trace_a) > 1:
+            if s % 10 == 0 and len(self.trace_a) > 1:
+                print(np.mean(np.diag(self.pvar)))
                 print('Step ' + str(s) + ' Complete')
                 with open(self.outdir + '_data_' + str(s), 'wb') as f:
                     pickle.dump([self.trace_a, self.trace_b, self.trace_x, self.trace_f1,

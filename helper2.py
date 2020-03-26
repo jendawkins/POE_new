@@ -406,7 +406,7 @@ def plot_f2_2(mu_a, var_a, o, spl):
         x = [generate_data_MM2(a_samp, b_samp, spl.gr[o], xin_o[o],
                               spl.dt, spl.num_states) for a_samp in a_samps]
         xtrue = generate_data_MM2(
-            spl.true_a, b_samp, spl.gr[0], xin_o[o], spl.dt, spl.num_states)
+            spl.true_a, spl.true_b, spl.gr[0], xin_o[o], spl.dt, spl.num_states)
 
         for b in range(spl.num_bugs):
             axes[b, o].set_title('Bug ' + str(b)+', Obs ' + str(o))
@@ -433,7 +433,7 @@ def plot_f1_2(mu_theta, var_theta, o, spl):
         x = [generate_data_betas(theta_samp, spl, spl.gr[o],\
             xin_o[o],spl.dt,spl.num_states) for theta_samp in theta_samps]
         xtrue = generate_data_MM2(
-            spl.true_a, b_samp, spl.gr[0], xin_o[o], spl.dt, spl.num_states)
+            spl.true_a, spl.true_b, spl.gr[0], xin_o[o], spl.dt, spl.num_states)
 
         for b in range(spl.num_bugs):
             axes[b, o].set_title('Bug ' + str(b)+', Obs ' + str(o))
