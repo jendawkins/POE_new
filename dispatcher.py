@@ -80,22 +80,24 @@ python3 ./main.py -MM {0} -a {1} -o {2} -gstepps {3} -useF1 {4} -useF2 {5}
 #    shutil.rmtree(basepath)
 #    os.mkdir(basepath)
 
-options = {'cooperation3','competing2','competing3a','competing3b'}
-useF1 = {True, False}
+# options = {'cooperation3','competing2','competing3a','competing3b'}
+options = 'competing2'
+bypassF1 = {True, False}
+bypassF2 = {True, False}
 basepath = 'outdir'
 
 for m in use_mm:
-    for uf1 in useF1:
-        for uf2 in useF1:
-            if not uf1 and not uf2:
+    for uf1 in bypassF1:
+        for uf2 in bypassF12
+            if uf1 and uf2:
                 continue
-            for opt in options:
-                outdir = '_outdir_new_opt_' + opt + '_MM' + str(m) + '_useF1_' + str(uf1) + '_useF2_' + str(uf2)
-                print(outdir)
+            # for opt in options:
+            outdir = '_outdir_new_opt_' + opt + '_MM' + str(m) + '_bypassF1_' + str(uf1) + '_bypassF2_' + str(uf2)
+            print(outdir)
 
-                fname = outdir + '.lsf'
+            fname = outdir + '.lsf'
 
-                f = open(fname,'w')
-                f.write(my_str.format(m,opt,outdir,10001,uf1,uf2))
-                f.close()
-                os.system('bsub < {}'.format(fname))
+            f = open(fname,'w')
+            f.write(my_str.format(m,opt,outdir,10001,uf1,uf2))
+            f.close()
+            os.system('bsub < {}'.format(fname))
