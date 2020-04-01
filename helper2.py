@@ -394,20 +394,27 @@ def plot_f2(outdir, xin, theta2, theta_true, use_mm, dt, gr,ob):
 
 
 def plot_f2_2(mu_a, var_a, o, spl):
-    a_samps = st.multivariate_normal(mu_a, var_a).rvs(size=(100))
+    try:
+        try:
+            a_samps = st.multivariate_normal(mu_a, var_a).rvs(size=(100))
+        except:
+            a_samps = st.multivariate_normal(
+                mu_a, var_a + 1e-10*np.eye(var_a.shape[0])).rvs(size=(100))
+    except:
+        a_samps = st.multivariate_normal(
+            mu_a, var_a + np.eye(var_a.shape[0])).rvs(size=(100))
     a_samps = [np.reshape(a_samps[n, :], (spl.num_bugs,
                                           spl.num_bugs), order='F') for n in range(100)]
     b_samp = np.ones(a_samps[0].shape)
     num_mice = spl.num_mice
     fig, axes = plt.subplots(spl.num_bugs, spl.num_mice, figsize=(30, 10))
-    tvec = np.arange(0, spl.time+2*spl.dt, spl.dt)
+    tvec = np.arange(0, spl.time+(2*spl.dt)-spl.dt, spl.dt*.1)
     for o in range(num_mice):
         xin_o = [st.truncnorm(0, .3).rvs(size=(1, spl.num_bugs)) for i in range(num_mice)]
         x = [generate_data_MM2(a_samp, b_samp, spl.gr[o], xin_o[o],
-                              spl.dt, spl.num_states) for a_samp in a_samps]
+                              spl.dt*.1, int(spl.num_states/.1)-1) for a_samp in a_samps]
         xtrue = generate_data_MM2(
-            spl.true_a, spl.true_b, spl.gr[0], xin_o[o], spl.dt, spl.num_states)
-
+            spl.true_a, spl.true_b, spl.gr[o], spl.xin[o], spl.dt*.1, int(spl.num_states/.1)-1)
         for b in range(spl.num_bugs):
             axes[b, o].set_title('Bug ' + str(b)+', Obs ' + str(o))
             for n in range(100):
@@ -426,14 +433,14 @@ def plot_f1_2(mu_theta, var_theta, o, spl):
     b_samp = np.ones((spl.num_bugs,spl.num_bugs))
     num_mice = spl.num_mice
     fig, axes = plt.subplots(spl.num_bugs, spl.num_mice, figsize=(30, 10))
-    tvec = np.arange(0, spl.time+2*spl.dt, spl.dt)
+    tvec = np.arange(0, spl.time+(2*spl.dt)-spl.dt, spl.dt*.1)
     for o in range(num_mice):
         xin_o = [st.truncnorm(0, .3).rvs(size=(1, spl.num_bugs))
                  for i in range(num_mice)]
         x = [generate_data_betas(theta_samp, spl, spl.gr[o],\
-            xin_o[o],spl.dt,spl.num_states) for theta_samp in theta_samps]
+                                 xin_o[o], spl.dt*.1, int(spl.num_states/.1)-1) for theta_samp in theta_samps]
         xtrue = generate_data_MM2(
-            spl.true_a, spl.true_b, spl.gr[0], xin_o[o], spl.dt, spl.num_states)
+            spl.true_a, spl.true_b, spl.gr[o], xin_o[o], spl.dt*.1, int(spl.num_states/.1)-1)
 
         for b in range(spl.num_bugs):
             axes[b, o].set_title('Bug ' + str(b)+', Obs ' + str(o))

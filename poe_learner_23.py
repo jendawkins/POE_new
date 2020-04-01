@@ -8,7 +8,7 @@ import pickle
 
 
 class SplineLearnerPOE_4D():
-    def __init__(self, use_mm=1, bypass_f1=False, bypass_f2=False, a='competing2', b=0.1, MEAS_VAR=.1, PROC_VAR=.001, THETA_VAR=1e7, AVAR=.01, BVAR=1, POE_VAR=1, NSAMPS=4, TIME=4, DT=.1, gr=5, outdir='outdir'):
+    def __init__(self, use_mm=1, bypass_f1=False, bypass_f2=False, a='competing2', b=0.1, MEAS_VAR=.1, PROC_VAR=.001, THETA_VAR=1e7, AVAR=1, BVAR=1, POE_VAR=1, NSAMPS=4, TIME=4, DT=.1, gr=5, outdir='outdir'):
         NPTSPERSAMP = int(TIME/DT)
         self.time = TIME
         self.bypass_f1 = bypass_f1
@@ -78,21 +78,21 @@ class SplineLearnerPOE_4D():
         # POE priors
         self.poe_var = POE_VAR*np.eye(self.num_bugs*(self.num_states-1))
         self.alpha = 2
-        self.beta_poevar = self.poe_var / (self.alpha - 1)
+        self.beta_poevar = self.poe_var / (self.alpha + 1)
 
         # Variance priors
-        self.pvar = 1*np.eye(self.num_bugs*(self.num_states-1))
+        self.pvar = (PROC_VAR*self.dt)*np.eye(self.num_bugs*(self.num_states-1))
         self.mvar = 1*np.eye(self.num_bugs*(self.num_states))
-        self.beta_mvar = self.mvar / (self.alpha - 1)
-        self.beta_pvar = self.pvar / (self.alpha - 1)
-
+        self.beta_mvar = self.mvar *(self.alpha + 1)
+        self.beta_pvar = self.pvar *(self.alpha + 1)
         self.states = np.transpose(self.states, (1, 2, 0))
         self.observations = np.transpose(self.observations, (1, 2, 0))
+
+        self.pvar = st.invgamma(self.alpha, self.beta_pvar).rvs()
 
         # f2 priors
         self.mu_a = -np.eye(self.num_bugs)
         self.mu_b = .5*np.ones((self.num_bugs, self.num_bugs))
-
 
     def bsplines(self, xi, x, bug1, bug2, k=3):
         # knots = np.linspace(x.min() + .01, x.max()-.01, num_knots)
@@ -417,7 +417,10 @@ class SplineLearnerPOE_4D():
 
                     f2 = f2.flatten(order='F')
                 if train_var:
-                    self.pvar = self.update_pvar(x[1:, :], f1)
+                    if self.bypass_f1:
+                        self.pvar = self.update_pvar(x[1:, :], f2)
+                    else:
+                        self.pvar = self.update_pvar(x[1:, :], f1)
                     self.poe_var = self.update_poe(f1, f2)
 
                 self.betavec.append(betas)

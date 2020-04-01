@@ -86,9 +86,10 @@ bypassF1 = {True, False}
 bypassF2 = {True, False}
 basepath = 'outdir'
 
+opt = options
 for m in use_mm:
     for uf1 in bypassF1:
-        for uf2 in bypassF12
+        for uf2 in bypassF2:
             if uf1 and uf2:
                 continue
             # for opt in options:
